@@ -1,79 +1,73 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include <stdbool.h>
 
-#define MAX_STATES 50
-#define MAX_INPUTS 50
-#define MAX_NAME 10
+#define MAX 100
+#define MAX_SYMBOL 20
+#define MAX_NAME 20
 
-// Utility functions
-int getIndex(char list[][MAX_NAME], int count, char *target) {
-    for (int i = 0; i < count; i++) {
-        if (strcmp(list[i], target) == 0)
+// Get index of a string in a list
+int getIndex(char list[][MAX_NAME], int size, char *str) {
+    for (int i = 0; i < size; i++) {
+        if (strcmp(list[i], str) == 0)
             return i;
     }
     return -1;
 }
 
-bool isFinalState(char *state, char finals[][MAX_NAME], int finalCount) {
-    for (int i = 0; i < finalCount; i++) {
-        if (strcmp(state, finals[i]) == 0)
-            return true;
-    }
-    return false;
-}
-
 int main() {
-    int n, ins;
-    char states[MAX_STATES][MAX_NAME];
-    char inputs[MAX_INPUTS][MAX_NAME];
-    int trans[MAX_STATES][MAX_INPUTS];
+    int nStates, nSymbols;
 
-    // DFA setup
+    // Input: States
     printf("Enter number of states: ");
-    scanf("%d", &n);
+    scanf("%d", &nStates);
+    char states[MAX][MAX_NAME];
     printf("Enter state names:\n");
-    for (int i = 0; i < n; i++) {
-        printf("State %d: ", i);
+    for (int i = 0; i < nStates; i++) {
+        printf("State %d: ", i + 1);
         scanf("%s", states[i]);
     }
 
-    char start[MAX_NAME];
+    // Start state
+    char startState[MAX_NAME];
     printf("Enter start state: ");
-    scanf("%s", start);
+    scanf("%s", startState);
 
+    // Final states
     int finalCount;
-    char finals[MAX_STATES][MAX_NAME];
+    char finalStates[MAX][MAX_NAME];
     printf("Enter number of final states: ");
     scanf("%d", &finalCount);
     printf("Enter final state names:\n");
     for (int i = 0; i < finalCount; i++) {
-        printf("Final state %d: ", i);
-        scanf("%s", finals[i]);
+        printf("Final state %d: ", i + 1);
+        scanf("%s", finalStates[i]);
     }
 
+    // Input symbols
     printf("Enter number of input symbols: ");
-    scanf("%d", &ins);
-    printf("Enter input symbols (single characters only):\n");
-    for (int i = 0; i < ins; i++) {
-        printf("Input %d: ", i);
-        scanf("%s", inputs[i]);
+    scanf("%d", &nSymbols);
+    char inputSymbols[MAX_SYMBOL][MAX_NAME];
+    printf("Enter input symbols:\n");
+    for (int i = 0; i < nSymbols; i++) {
+        printf("Symbol %d: ", i + 1);
+        scanf("%s", inputSymbols[i]);
     }
 
-    printf("Enter transitions (use - for no transition):\n");
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < ins; j++) {
-            char next[MAX_NAME];
-            printf("δ(%s, %s): ", states[i], inputs[j]);
-            scanf("%s", next);
-            if (strcmp(next, "-") == 0) {
+    // Transition table
+    int trans[MAX][MAX_SYMBOL];
+    printf("Enter transition table (use '-' for no transition):\n");
+    for (int i = 0; i < nStates; i++) {
+        for (int j = 0; j < nSymbols; j++) {
+            char target[MAX_NAME];
+            printf("δ(%s, %s): ", states[i], inputSymbols[j]);
+            scanf("%s", target);
+            if (strcmp(target, "-") == 0) {
                 trans[i][j] = -1;
             } else {
-                int idx = getIndex(states, n, next);
+                int idx = getIndex(states, nStates, target);
                 if (idx == -1) {
-                    printf("Invalid state. Exiting.\n");
+                    printf("❌ Invalid state name! Exiting.\n");
                     return 1;
                 }
                 trans[i][j] = idx;
@@ -81,53 +75,58 @@ int main() {
         }
     }
 
-    // Consume newline from previous input
-    getchar();
+    // Input string
+    char inputStr[1000];
+    printf("\nEnter input string (space-separated tokens): ");
+    getchar(); // Clear newline
+    fgets(inputStr, sizeof(inputStr), stdin);
+    inputStr[strcspn(inputStr, "\n")] = '\0'; // Remove newline
 
-    while (1) {
-        char str[200];
-        printf("\nEnter the string input for DFA (use only input symbols, type 'exit' to quit): ");
-        fgets(str, sizeof(str), stdin);
-        str[strcspn(str, "\n")] = 0;
-
-        if (strcmp(str, "exit") == 0)
-            break;
-
-        int cur = getIndex(states, n, start);
-        if (cur == -1) {
-            printf("Invalid start state. Exiting.\n");
-            return 1;
-        }
-
-        bool dead = false;
-        for (int i = 0; i < strlen(str); i++) {
-            char symbolStr[2] = {str[i], '\0'};  // Convert char to string
-            int inp_idx = getIndex(inputs, ins, symbolStr);
-            if (inp_idx == -1) {
-                printf("❌ Invalid input symbol: '%c'. Rejected.\n", str[i]);
-                dead = true;
-                break;
-            }
-            int next = trans[cur][inp_idx];
-            if (next == -1) {
-                printf("❌ Dead transition: %s --%c--> (none). Rejected.\n", states[cur], str[i]);
-                dead = true;
-                break;
-            }
-            printf("Step %d: %s --%c--> %s\n", i + 1, states[cur], str[i], states[next]);
-            cur = next;
-        }
-
-        if (!dead) {
-            if (isFinalState(states[cur], finals, finalCount)) {
-                printf("✅ Final state '%s' reached. Input accepted!\n", states[cur]);
-            } else {
-                printf("❌ Final state not reached (ended at '%s'). Input rejected.\n", states[cur]);
-            }
-        }
+    char *token = strtok(inputStr, " ");
+    int curState = getIndex(states, nStates, startState);
+    if (curState == -1) {
+        printf("❌ Invalid start state.\n");
+        return 1;
     }
 
-    printf("👋 Exiting. Thank you!\n");
+    char currentToken[200] = "";
+    int step = 1;
+
+    printf("\n🔄 DFA Execution Steps:\n");
+
+    while (token != NULL) {
+        int symbolIndex = getIndex(inputSymbols, nSymbols, token);
+        if (symbolIndex == -1) {
+            printf("❌ Invalid input symbol: %s\n", token);
+            break;
+        }
+
+        int nextState = trans[curState][symbolIndex];
+        if (nextState == -1) {
+            printf("❌ Dead transition on (%s, %s). Rejected.\n", states[curState], token);
+            break;
+        }
+
+        // Print transition step
+        printf("Step %d: %s --%s--> %s\n", step++, states[curState], token, states[nextState]);
+
+        // Append to current token
+        strcat(currentToken, token);
+        strcat(currentToken, " ");
+        curState = nextState;
+
+        // Final state check
+        if (getIndex(finalStates, finalCount, states[curState]) != -1) {
+            printf("✅ Token accepted: %s\n\n", currentToken);
+            currentToken[0] = '\0';
+            curState = getIndex(states, nStates, startState); // reset
+        }
+
+        token = strtok(NULL, " ");
+    }
+
+    printf("🛑 End of input.\n");
     return 0;
 }
+
 
