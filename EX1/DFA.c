@@ -1,228 +1,133 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <stdbool.h>
 
-#define MAX 20
+#define MAX_STATES 50
+#define MAX_INPUTS 50
+#define MAX_NAME 10
 
-// Global variables
-int numStates, numSymbols;
-int transition[MAX][MAX];     // Transition table
-char symbols[MAX];            // Input symbols
-int startState;
-int finalStates[MAX], numFinalStates;
-
-// Get index of symbol from the symbol array
-int getSymbolIndex(char c) {
-    for (int i = 0; i < numSymbols; i++) {
-        if (symbols[i] == c) return i;
+// Utility functions
+int getIndex(char list[][MAX_NAME], int count, char *target) {
+    for (int i = 0; i < count; i++) {
+        if (strcmp(list[i], target) == 0)
+            return i;
     }
     return -1;
 }
 
-// Check if a state is a final state
-bool isFinal(int state) {
-    for (int i = 0; i < numFinalStates; i++) {
-        if (finalStates[i] == state) return true;
+bool isFinalState(char *state, char finals[][MAX_NAME], int finalCount) {
+    for (int i = 0; i < finalCount; i++) {
+        if (strcmp(state, finals[i]) == 0)
+            return true;
     }
     return false;
 }
 
-// ------------------- DFA Minimization (Table Filling Method) -------------------
-void minimizeDFA() {
-    bool distinguishable[MAX][MAX] = {false}; // Table to mark distinguishable pairs
+int main() {
+    int n, ins;
+    char states[MAX_STATES][MAX_NAME];
+    char inputs[MAX_INPUTS][MAX_NAME];
+    int trans[MAX_STATES][MAX_INPUTS];
 
-    // Step 1: Mark pairs where one is final and one is not
-    for (int i = 0; i < numStates; i++) {
-        for (int j = 0; j < numStates; j++) {
-            if ((isFinal(i) && !isFinal(j)) || (!isFinal(i) && isFinal(j))) {
-                distinguishable[i][j] = distinguishable[j][i] = true;
+    // DFA setup
+    printf("Enter number of states: ");
+    scanf("%d", &n);
+    printf("Enter state names:\n");
+    for (int i = 0; i < n; i++) {
+        printf("State %d: ", i);
+        scanf("%s", states[i]);
+    }
+
+    char start[MAX_NAME];
+    printf("Enter start state: ");
+    scanf("%s", start);
+
+    int finalCount;
+    char finals[MAX_STATES][MAX_NAME];
+    printf("Enter number of final states: ");
+    scanf("%d", &finalCount);
+    printf("Enter final state names:\n");
+    for (int i = 0; i < finalCount; i++) {
+        printf("Final state %d: ", i);
+        scanf("%s", finals[i]);
+    }
+
+    printf("Enter number of input symbols: ");
+    scanf("%d", &ins);
+    printf("Enter input symbols (single characters only):\n");
+    for (int i = 0; i < ins; i++) {
+        printf("Input %d: ", i);
+        scanf("%s", inputs[i]);
+    }
+
+    printf("Enter transitions (use - for no transition):\n");
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < ins; j++) {
+            char next[MAX_NAME];
+            printf("δ(%s, %s): ", states[i], inputs[j]);
+            scanf("%s", next);
+            if (strcmp(next, "-") == 0) {
+                trans[i][j] = -1;
+            } else {
+                int idx = getIndex(states, n, next);
+                if (idx == -1) {
+                    printf("Invalid state. Exiting.\n");
+                    return 1;
+                }
+                trans[i][j] = idx;
             }
         }
     }
 
-    // Step 2: Iteratively mark pairs based on transition differences
-    bool changed;
-    do {
-        changed = false;
-        for (int i = 0; i < numStates; i++) {
-            for (int j = 0; j < i; j++) {
-                if (distinguishable[i][j]) continue;
+    // Consume newline from previous input
+    getchar();
 
-                for (int k = 0; k < numSymbols; k++) {
-                    int a = transition[i][k];
-                    int b = transition[j][k];
+    while (1) {
+        char str[200];
+        printf("\nEnter the string input for DFA (use only input symbols, type 'exit' to quit): ");
+        fgets(str, sizeof(str), stdin);
+        str[strcspn(str, "\n")] = 0;
 
-                    if (a == -1 || b == -1) continue;
+        if (strcmp(str, "exit") == 0)
+            break;
 
-                    if (distinguishable[a][b]) {
-                        distinguishable[i][j] = distinguishable[j][i] = true;
-                        changed = true;
-                        break;
-                    }
-                }
-            }
+        int cur = getIndex(states, n, start);
+        if (cur == -1) {
+            printf("Invalid start state. Exiting.\n");
+            return 1;
         }
-    } while (changed);
 
-    // Step 3: Group equivalent states
-    int stateMap[MAX];
-    for (int i = 0; i < numStates; i++) stateMap[i] = i;
-
-    for (int i = 0; i < numStates; i++) {
-        for (int j = 0; j < i; j++) {
-            if (!distinguishable[i][j]) {
-                stateMap[i] = stateMap[j];
+        bool dead = false;
+        for (int i = 0; i < strlen(str); i++) {
+            char symbolStr[2] = {str[i], '\0'};  // Convert char to string
+            int inp_idx = getIndex(inputs, ins, symbolStr);
+            if (inp_idx == -1) {
+                printf("❌ Invalid input symbol: '%c'. Rejected.\n", str[i]);
+                dead = true;
                 break;
             }
+            int next = trans[cur][inp_idx];
+            if (next == -1) {
+                printf("❌ Dead transition: %s --%c--> (none). Rejected.\n", states[cur], str[i]);
+                dead = true;
+                break;
+            }
+            printf("Step %d: %s --%c--> %s\n", i + 1, states[cur], str[i], states[next]);
+            cur = next;
         }
-    }
 
-    // Step 4: Assign new state numbers
-    int newMap[MAX], newStateCount = 0;
-    for (int i = 0; i < numStates; i++) {
-        if (stateMap[i] == i) newMap[i] = newStateCount++;
-        else newMap[i] = newMap[stateMap[i]];
-    }
-
-    // Step 5: Build new minimized transition table
-    int newTransition[MAX][MAX];
-    for (int i = 0; i < MAX; i++)
-        for (int j = 0; j < MAX; j++)
-            newTransition[i][j] = -1;
-
-    for (int i = 0; i < numStates; i++) {
-        int from = newMap[stateMap[i]];
-        for (int j = 0; j < numSymbols; j++) {
-            int to = transition[i][j];
-            if (to != -1) {
-                newTransition[from][j] = newMap[stateMap[to]];
+        if (!dead) {
+            if (isFinalState(states[cur], finals, finalCount)) {
+                printf("✅ Final state '%s' reached. Input accepted!\n", states[cur]);
+            } else {
+                printf("❌ Final state not reached (ended at '%s'). Input rejected.\n", states[cur]);
             }
         }
     }
 
-    // Step 6: Update final states
-    int newFinal[MAX], newFinalCount = 0;
-    for (int i = 0; i < numStates; i++) {
-        if (isFinal(i)) {
-            int rep = newMap[stateMap[i]];
-            bool alreadyAdded = false;
-            for (int j = 0; j < newFinalCount; j++) {
-                if (newFinal[j] == rep) {
-                    alreadyAdded = true;
-                    break;
-                }
-            }
-            if (!alreadyAdded) newFinal[newFinalCount++] = rep;
-        }
-    }
-
-    // Display the minimized DFA
-    printf("\n✅ Minimized DFA:\n");
-    printf("Start State: %d\n", newMap[stateMap[startState]]);
-    printf("Final States: ");
-    for (int i = 0; i < newFinalCount; i++) printf("%d ", newFinal[i]);
-    printf("\nTransition Table:\n");
-    for (int i = 0; i < newStateCount; i++) {
-        for (int j = 0; j < numSymbols; j++) {
-            if (newTransition[i][j] != -1)
-                printf("δ(%d, %c) = %d\n", i, symbols[j], newTransition[i][j]);
-        }
-    }
-
-    // Update DFA with minimized values
-    numStates = newStateCount;
-    memcpy(transition, newTransition, sizeof(newTransition));
-    startState = newMap[stateMap[startState]];
-    memcpy(finalStates, newFinal, sizeof(newFinal));
-    numFinalStates = newFinalCount;
-}
-
-// ------------------- String Acceptance -------------------
-bool isAccepted(char *input) {
-    int state = startState;
-    for (int i = 0; i < strlen(input); i++) {
-        int symIdx = getSymbolIndex(input[i]);
-        if (symIdx == -1 || transition[state][symIdx] == -1) return false;
-        state = transition[state][symIdx];
-    }
-    return isFinal(state);
-}
-
-// ------------------- Main Function -------------------
-int main() {
-    // Input number of states
-    printf("Enter number of states: ");
-    scanf("%d", &numStates);
-    getchar(); // Flush newline
-
-    // Input number of input symbols
-    printf("Enter number of input symbols: ");
-    scanf("%d", &numSymbols);
-    getchar(); // Flush newline
-
-    // Input symbols
-    printf("Enter input symbols (e.g., a b): ");
-    for (int i = 0; i < numSymbols; i++) {
-        scanf(" %c", &symbols[i]);
-    }
-    getchar(); // Flush newline
-
-    // Initialize transition table
-    for (int i = 0; i < MAX; i++)
-        for (int j = 0; j < MAX; j++)
-            transition[i][j] = -1;
-
-    // Input transitions
-    printf("\nEnter transitions in format: δ(state, symbol) = next_state;\n");
-    printf("Enter total number of transitions: ");
-    int t;
-    scanf("%d", &t);
-    getchar(); // Flush newline
-
-    for (int i = 0; i < t; i++) {
-        int from, to;
-        char symbol;
-        printf("Transition %d: ", i + 1);
-        scanf("δ(%d , %c ) = %d;", &from, &symbol, &to);
-        getchar(); // Flush newline
-
-        int symIndex = getSymbolIndex(symbol);
-        if (symIndex == -1) {
-            printf("❌ Invalid symbol '%c'. Skipping.\n", symbol);
-            continue;
-        }
-        transition[from][symIndex] = to;
-    }
-
-    // Input start state
-    printf("Enter start state: ");
-    scanf("%d", &startState);
-    getchar();
-
-    // Input final states
-    printf("Enter number of final states: ");
-    scanf("%d", &numFinalStates);
-    getchar();
-
-    printf("Enter final states: ");
-    for (int i = 0; i < numFinalStates; i++) {
-        scanf("%d", &finalStates[i]);
-    }
-
-    // Minimize the DFA
-    minimizeDFA();
-
-    // Check string for acceptance
-    char inputStr[100];
-    printf("\nEnter string to check: ");
-    scanf("%s", inputStr);
-
-    if (isAccepted(inputStr)) {
-        printf("✅ String is ACCEPTED by the minimized DFA.\n");
-    } else {
-        printf("❌ String is REJECTED by the minimized DFA.\n");
-    }
-
+    printf("👋 Exiting. Thank you!\n");
     return 0;
 }
+
