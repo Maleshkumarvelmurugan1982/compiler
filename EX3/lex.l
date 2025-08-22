@@ -4,47 +4,47 @@ int prev_token = 0;   /* 0 = start, 1 = operand, 2 = operator */
 %}
 
 %%
-"for"       { printf("KEYWORD: %s\n", yytext); prev_token=2; }
-"switch"    { printf("KEYWORD: %s\n", yytext); prev_token=2; }
-"case"      { printf("KEYWORD: %s\n", yytext); prev_token=2; }
-"break"     { printf("KEYWORD: %s\n", yytext); prev_token=2; }
-"default"   { printf("KEYWORD: %s\n", yytext); prev_token=2; }
-"int"       { printf("KEYWORD: %s\n", yytext); prev_token=2; }
+"for"       { printf("KEYWORD: for\n"); prev_token=2; }
+"switch"    { printf("KEYWORD: switch\n"); prev_token=2; }
+"case"      { printf("KEYWORD: case\n"); prev_token=2; }
+"break"     { printf("KEYWORD: break\n"); prev_token=2; }
+"default"   { printf("KEYWORD: default\n"); prev_token=2; }
+"int"       { printf("KEYWORD: int\n"); prev_token=2; }
 
 \"([^\"\\]|\\.)*\"   { printf("STRING_LITERAL: %s\n", yytext); prev_token=1; }
 
 [0-9]+      { printf("NUMBER: %s\n", yytext); prev_token=1; }
 [a-zA-Z_][a-zA-Z0-9_]*  { printf("IDENTIFIER: %s\n", yytext); prev_token=1; }
 
-"++"        { printf("OPERATOR: %s\n", yytext); prev_token=2; }
-"--"        { printf("OPERATOR: %s\n", yytext); prev_token=2; }
-"=="        { printf("OPERATOR: %s\n", yytext); prev_token=2; }
-"<="        { printf("OPERATOR: %s\n", yytext); prev_token=2; }
-">="        { printf("OPERATOR: %s\n", yytext); prev_token=2; }
-"<"         { printf("OPERATOR: %s\n", yytext); prev_token=2; }
-">"         { printf("OPERATOR: %s\n", yytext); prev_token=2; }
-"="         { printf("OPERATOR: %s\n", yytext); prev_token=2; }
-"+"         { printf("OPERATOR: %s\n", yytext); prev_token=2; }
+"++"        { printf("INCREMENT: %s\n", yytext); prev_token=2; }
+"--"        { printf("DECREMENT: %s\n", yytext); prev_token=2; }
+"=="        { printf("EQUALITY: %s\n", yytext); prev_token=2; }
+"<="        { printf("LESSEQ: %s\n", yytext); prev_token=2; }
+">="        { printf("GREQ: %s\n", yytext); prev_token=2; }
+"<"         { printf("LESS: %s\n", yytext); prev_token=2; }
+">"         { printf("GREATER: %s\n", yytext); prev_token=2; }
+"="         { printf("ASSIGN: %s\n", yytext); prev_token=2; }
+"+"         { printf("PLUS: %s\n", yytext); prev_token=2; }
 
 "-" {
     if (prev_token == 0 || prev_token == 2) {
-        printf("UNARY_OPERATOR: -\n");
+        printf("UNARY_MINUS: -\n");
     } else {
-        printf("OPERATOR: -\n");
+        printf("MINUS: -\n");
     }
     prev_token = 2;
 }
 
-"*"         { printf("OPERATOR: %s\n", yytext); prev_token=2; }
-"/"         { printf("OPERATOR: %s\n", yytext); prev_token=2; }
+"*"         { printf("MULTIPLY: %s\n", yytext); prev_token=2; }
+"/"         { printf("DIVIDE: %s\n", yytext); prev_token=2; }
 
-";"         { printf("DELIMITER: %s\n", yytext); prev_token=2; }
-":"         { printf("DELIMITER: %s\n", yytext); prev_token=2; }
-","         { printf("DELIMITER: %s\n", yytext); prev_token=2; }
-"{"         { printf("DELIMITER: %s\n", yytext); prev_token=2; }
-"}"         { printf("DELIMITER: %s\n", yytext); prev_token=2; }
-"("         { printf("DELIMITER: %s\n", yytext); prev_token=2; }
-")"         { printf("DELIMITER: %s\n", yytext); prev_token=1; }
+";"         { printf("SEMICOLON: ;\n"); prev_token=2; }
+":"         { printf("COLON: :\n"); prev_token=2; }
+","         { printf("COMMA: ,\n"); prev_token=2; }
+"{"         { printf("LBRACE: {\n"); prev_token=2; }
+"}"         { printf("RBRACE: }\n"); prev_token=2; }
+"("         { printf("LPAREN: (\n"); prev_token=2; }
+")"         { printf("RPAREN: )\n"); prev_token=1; }
 
 [ \t\n]+    ;   /* Ignore whitespace */
 .           { printf("UNKNOWN: %s\n", yytext); prev_token=2; }
