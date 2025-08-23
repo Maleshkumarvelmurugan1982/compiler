@@ -13,12 +13,10 @@ FILE *yyin;
 "int"       { printf("KEYWORD: int\n"); prev_token=2; }
 "float"     { printf("KEYWORD: float\n"); prev_token=2; }
 
-\"([^\"\\]|\\.)*\"   { 
-    printf("STRING_LITERAL: %s\n", yytext); 
-    prev_token=1; 
-}
+\"([^\"]|\\\")*\"    { printf("STRING_LITERAL: %s\n", yytext); prev_token=1; }
 
-[0-9]+      { printf("NUMBER: %s\n", yytext); prev_token=1; }
+[0-9]+"."[0-9]*([eE][-+]?[0-9]+)?   { printf("FLOAT: %s\n", yytext); prev_token=1; }
+[0-9]+                               { printf("NUMBER: %s\n", yytext); prev_token=1; }
 
 [a-zA-Z_][a-zA-Z0-9_]*  { printf("IDENTIFIER: %s\n", yytext); prev_token=1; }
 
@@ -32,13 +30,13 @@ FILE *yyin;
 "="         { printf("ASSIGN: %s\n", yytext); prev_token=2; }
 "+"         { printf("PLUS: %s\n", yytext); prev_token=2; }
 
-"-" {     
+"-" {
     if (prev_token == 0 || prev_token == 2) {
         printf("UNARY_MINUS: -\n");
     } else {
         printf("MINUS: -\n");
     }
-    prev_token = 2; 
+    prev_token = 2;
 }
 
 "*"         { printf("MULTIPLY: %s\n", yytext); prev_token=2; }
