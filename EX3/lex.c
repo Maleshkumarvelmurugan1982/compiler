@@ -6,7 +6,7 @@ for (int i = 0; i < 3; i++) {
 }
 int x = -5;
     int i;
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < 5.3; i++) {
         switch(i) {
             case 0:
                 # do something
