@@ -1,21 +1,40 @@
-for (int i = 0; i < 3; i++) {
-    switch(i) {
-        case 0: printf("%d\n", i); break;
-        default: printf("other\n");
+#include <stdio.h>
+
+int main() {
+    int a = -10;
+    float b = 20.5;
+    int c;
+
+    // arithmetic and assignment
+    c = a + b;
+    c -= 5;
+    c *= 2;
+    c /= 3;
+    c %= 4;
+
+    // relational
+    if (c == 10) {
+        printf("Equal\n");
+    } else if (c != 0 && c <= 20) {
+        printf("Condition met\n");
+    } else {
+        printf("Not equal\n");
     }
-}
-int x = -5;
-    int i;
-    for (i = 0; i < 5.3; i++) {
-        switch(i) {
+
+    // loop with switch
+    for (int i = 0; i < 3; i++) {
+        switch (i) {
             case 0:
-                # do something
+                printf("Case 0\n");
                 break;
             case 1:
+                printf("Case 1\n");
                 break;
             default:
+                printf("Default case\n");
                 break;
         }
     }
+
     return 0;
 }
