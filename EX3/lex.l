@@ -1,60 +1,74 @@
 %{
-int prev_token = 0;   /* 0 = start, 1 = operand, 2 = operator */
+#include <stdio.h>
 FILE *yyin;
 %}
 
+%start BIN
+%start UMINUS
+%start UPLUS
+
 %%
 
-"for"       { printf("KEYWORD: for\n"); prev_token=2; }
-"switch"    { printf("KEYWORD: switch\n"); prev_token=2; }
-"case"      { printf("KEYWORD: case\n"); prev_token=2; }
-"break"     { printf("KEYWORD: break\n"); prev_token=2; }
-"default"   { printf("KEYWORD: default\n"); prev_token=2; }
-"int"       { printf("KEYWORD: int\n"); prev_token=2; }
-"float"     { printf("KEYWORD: float\n"); prev_token=2; }
+"if"      { BEGIN 0; printf("<keyword:%s>\n", yytext); }
+"else"    { BEGIN 0; printf("<keyword:%s>\n", yytext); }
+"while"   { BEGIN 0; printf("<keyword:%s>\n", yytext); }
+"for"     { BEGIN 0; printf("<keyword:%s>\n", yytext); }
+"switch"  { BEGIN 0; printf("<keyword:%s>\n", yytext); }
+"case"    { BEGIN 0; printf("<keyword:%s>\n", yytext); }
+"break"   { BEGIN 0; printf("<keyword:%s>\n", yytext); }
+"default" { BEGIN 0; printf("<keyword:%s>\n", yytext); }
+"int"     { BEGIN 0; printf("<keyword:%s>\n", yytext); }
+"float"   { BEGIN 0; printf("<keyword:%s>\n", yytext); }
+"return"  { BEGIN 0; printf("<keyword:%s>\n", yytext); }
+"printf"  { BEGIN 0; printf("<function:%s>\n", yytext); }
 
-\"([^\"]|\\\")*\"    { printf("STRING_LITERAL: %s\n", yytext); prev_token=1; }
+","       { BEGIN UMINUS; printf("<comma:%s>\n", yytext); }
+"*"       { BEGIN UMINUS; printf("<multiplication:%s>\n", yytext); }
+"/"       { BEGIN UMINUS; printf("<division:%s>\n", yytext); }
+"%"       { BEGIN UMINUS; printf("<modulus:%s>\n", yytext); }
 
-[0-9]+"."[0-9]*([eE][-+]?[0-9]+)?   { printf("FLOAT: %s\n", yytext); prev_token=1; }
-[0-9]+                               { printf("NUMBER: %s\n", yytext); prev_token=1; }
+"+="      { BEGIN UMINUS; printf("<addition assignment:%s>\n", yytext); }
+"-="      { BEGIN UMINUS; printf("<subtraction assignment:%s>\n", yytext); }
+"*="      { BEGIN UMINUS; printf("<multiplication assignment:%s>\n", yytext); }
+"/="      { BEGIN UMINUS; printf("<division assignment:%s>\n", yytext); }
+"%="      { BEGIN UMINUS; printf("<modulus assignment:%s>\n", yytext); }
+"="       { BEGIN UMINUS; printf("<assignment:%s>\n", yytext); }
 
-[a-zA-Z_][a-zA-Z0-9_]*  { printf("IDENTIFIER: %s\n", yytext); prev_token=1; }
+"=="      { BEGIN 0; printf("<equality:%s>\n", yytext); }
+"!="      { BEGIN 0; printf("<inequality:%s>\n", yytext); }
+"<="      { BEGIN 0; printf("<less than or equal:%s>\n", yytext); }
+">="      { BEGIN 0; printf("<greater than or equal:%s>\n", yytext); }
+"<"       { BEGIN 0; printf("<less than:%s>\n", yytext); }
+">"       { BEGIN 0; printf("<greater than:%s>\n", yytext); }
 
-"++"        { printf("INCREMENT: %s\n", yytext); prev_token=2; }
-"--"        { printf("DECREMENT: %s\n", yytext); prev_token=2; }
-"=="        { printf("EQUALITY: %s\n", yytext); prev_token=2; }
-"<="        { printf("LESSEQ: %s\n", yytext); prev_token=2; }
-">="        { printf("GREQ: %s\n", yytext); prev_token=2; }
-"<"         { printf("LESS: %s\n", yytext); prev_token=2; }
-">"         { printf("GREATER: %s\n", yytext); prev_token=2; }
-"="         { printf("ASSIGN: %s\n", yytext); prev_token=2; }
-"+"         { printf("PLUS: %s\n", yytext); prev_token=2; }
+[A-Za-z_][A-Za-z0-9_]*  { BEGIN 0; printf("<identifier:%s>\n", yytext); }
 
-"-" {
-    if (prev_token == 0 || prev_token == 2) {
-        printf("UNARY_MINUS: -\n");
-    } else {
-        printf("MINUS: -\n");
-    }
-    prev_token = 2;
-}
+[0-9]+\.[0-9]+   { BEGIN BIN; printf("<float:%s>\n", yytext); }
+[0-9]+           { BEGIN BIN; printf("<int:%s>\n", yytext); }
+"\""([^"\n]*)"\"" { BEGIN 0; printf("<string:%s>\n", yytext); }
+"#"              { BEGIN 0; printf("<hash:%s>\n", yytext); }
 
-"*"         { printf("MULTIPLY: %s\n", yytext); prev_token=2; }
-"/"         { printf("DIVIDE: %s\n", yytext); prev_token=2; }
-";"         { printf("SEMICOLON: ;\n"); prev_token=2; }
-":"         { printf("COLON: :\n"); prev_token=2; }
-","         { printf("COMMA: ,\n"); prev_token=2; }
-"{"         { printf("LBRACE: {\n"); prev_token=2; }
-"}"         { printf("RBRACE: }\n"); prev_token=2; }
-"("         { printf("LPAREN: (\n"); prev_token=2; }
-")"         { printf("RPAREN: )\n"); prev_token=1; }
+<BIN>"++" { BEGIN 0; printf("<post increment:%s>\n", yytext); }
+<BIN>"--" { BEGIN 0; printf("<post decrement:%s>\n", yytext); }
+"++"      { BEGIN 0; printf("<pre increment:%s>\n", yytext); }
+"--"      { BEGIN 0; printf("<pre decrement:%s>\n", yytext); }
 
-"#"         { printf("HASH: #\n"); prev_token=2; }
+<UMINUS>"-"  { BEGIN 0; printf("<unary minus:%s>\n", yytext); }
+<UPLUS>"+"   { BEGIN 0; printf("<unary plus:%s>\n", yytext); }
 
-[ \t\n]+    ;   /* Ignore whitespace */
+"+"       { BEGIN UPLUS; printf("<add:%s>\n", yytext); }
+"-"       { BEGIN UMINUS; printf("<subtraction:%s>\n", yytext); }
 
-.           { printf("UNKNOWN: %s\n", yytext); prev_token=2; }
+";"       { BEGIN UMINUS; printf("<semicolon:%s>\n", yytext); }
+"("       { BEGIN UMINUS; printf("<left parenthesis:%s>\n", yytext); }
+")"       { BEGIN BIN;    printf("<right parenthesis:%s>\n", yytext); }
+"{"       { BEGIN UMINUS; printf("<left brace:%s>\n", yytext); }
+"}"       { BEGIN 0;      printf("<right brace:%s>\n", yytext); }
+":"       { BEGIN 0;      printf("<colon:%s>\n", yytext); }
 
+"\n"      { BEGIN UMINUS; printf("\n"); }
+[ \t]+    { /* ignore whitespace */ }
+.         { BEGIN 0; printf("<unknown:token:%s>\n", yytext); }
 %%
 
 int main(int argc, char **argv) {
