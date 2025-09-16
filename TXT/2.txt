@@ -1,0 +1,105 @@
+C:\Users\males>wsl
+males@LAPTOP-MKSIR7EP:/mnt/c/Users/males$ cat lex.l
+%{
+#include "y.tab.h"
+extern int yylineno;   /* don’t redefine, just use */
+//int yylineno = 1;      /* but if your Lex doesn’t provide it, uncomment this */
+%}
+
+id      [a-zA-Z_][a-zA-Z0-9_]*
+number  [0-9]+
+
+%%
+
+\n          { yylineno++; return NEWLINE; }
+[ \t\r]+    ;   /* skip whitespace */
+
+{id}        { return ID; }
+{number}    { return NUMBER; }
+
+"+"         { return '+'; }
+"-"         { return '-'; }
+"*"         { return '*'; }
+"/"         { return '/'; }
+"%"         { return '%'; }
+"("         { return '('; }
+")"         { return ')'; }
+
+.           { return yytext[0]; }
+
+%%
+
+int yywrap(void) {
+    return 1;
+}
+males@LAPTOP-MKSIR7EP:/mnt/c/Users/males$ cat expr.y
+%{
+#include <stdio.h>
+#include <stdlib.h>
+
+extern int yylineno;
+extern FILE *yyin;
+int yylex(void);
+void yyerror(const char *s) { /* suppress default */ }
+%}
+
+%token ID NUMBER NEWLINE
+
+%left '+' '-'
+%left '*' '/' '%'
+%right UMINUS
+
+%%
+
+input:
+      /* empty */
+    | input line
+    ;
+
+line:
+      E NEWLINE         { printf("Line %d: Expression parsed successfully.\n", yylineno - 1); }
+    | NEWLINE           { /* blank line */ }
+    | error NEWLINE     { printf("Line %d: Syntax error.\n", yylineno - 1); yyerrok; }
+    ;
+
+E:
+      E '+' E
+    | E '-' E
+    | E '*' E
+    | E '/' E
+    | E '%' E
+    | '(' E ')'
+    | ID
+    | NUMBER
+    | '-' E %prec UMINUS
+    ;
+
+%%
+
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s input.txt\n", argv[0]);
+        return 1;
+    }
+
+    yyin = fopen(argv[1], "r");
+    if (!yyin) { perror("fopen"); return 1; }
+
+    yyparse();
+
+    fclose(yyin);
+    return 0;
+}
+males@LAPTOP-MKSIR7EP:/mnt/c/Users/males$ cat input.txt
+a + b * (c - d)
+x / y + z % 5
+- m * (n + 2)
+p - q - r
+42
+a + * b
+( x + y
+42 +
+* z
+a + (b - c
+) a + b (
+males@LAPTOP-MKSIR7EP:/mnt/c/Users/males$
